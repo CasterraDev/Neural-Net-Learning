@@ -1,11 +1,11 @@
 #!/bin/sh
 
 hasBear=$(command -v bear);
-clangCommand="clang -Wall -Wextra -o ml *.c -lm"
+prefix=""
 
-if [ -z $hasBear ];
+if [ ! -z $hasBear ];
 then
-    $clangCommand;
-else
-    bear -- $clangCommand;
+    prefix="bear --";
 fi;
+
+$prefix clang -Wall -Wextra -o xor xor.c -lm
