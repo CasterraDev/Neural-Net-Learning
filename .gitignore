@@ -1,4 +1,7 @@
+.git/
 .cache/
 compile_commands.json
-!*.*
+# Executables
+ml
+xor
 
