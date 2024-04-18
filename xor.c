@@ -135,7 +135,8 @@ float trainingData[] = {
 // clang-format on
 
 int main(void) {
-    srand(time(0));
+    //srand(time(0));
+    srand(40);
 
     // The architecture is very important and something that you can tweak to make the nn better or worse.
     size_t arch[] = {2,3,1};
@@ -145,8 +146,6 @@ int main(void) {
     // Randomize the weights/bias of the neural net.
     nnRand(nn, 0, 1);
 
-    float eps = 1e-1;
-    float rate = 1e-1;
     size_t stride = 3;
     size_t n = sizeof(trainingData) / sizeof(trainingData[0]) / stride;
 
@@ -156,9 +155,10 @@ int main(void) {
 
     printf("cost = %f\n", nnCost(nn, ti, to));
 
+    float rate = 1;
     // Train the nn using finiteDiff
-    for (size_t i = 0; i < 100*1000; ++i){
-        nnFiniteDiff(nn, g, eps, ti, to);
+    for (size_t i = 0; i < 5000; ++i){
+        nnBackprop(nn, g, ti, to);
         nnLearn(nn, g, rate);
         printf("cost = %f\n", nnCost(nn, ti, to));
     }

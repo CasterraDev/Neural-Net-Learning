@@ -290,7 +290,7 @@ void nnBackprop(NN nn, NN g, Mat ti, Mat to) {
         // Put the (nn calculated value - desired value) difference into the
         // gradient matrix
         for (size_t j = 0; j < to.cols; ++j) {
-            MAT_AT(NN_OUTPUT(g), i, j) =
+            MAT_AT(NN_OUTPUT(g), 0, j) =
                 MAT_AT(NN_OUTPUT(nn), 0, j) - MAT_AT(to, i, j);
         }
         
