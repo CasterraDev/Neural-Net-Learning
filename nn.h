@@ -49,12 +49,14 @@ typedef struct {
 #define NN_OUTPUT(nn) (nn).as[(nn).count]
 
 NN nnAlloc(size_t* arch, size_t archCount);
+void nnFill(NN nn, size_t val);
 void nnPrint(NN nn, const char* name);
 #define NN_PRINT(nn) nnPrint(nn, #nn);
 void nnRand(NN nn, float low, float high);
 void nnForward(NN nn);
 float nnCost(NN nn, Mat ti, Mat to);
 void nnFiniteDiff(NN nn, NN g, float eps, Mat ti, Mat to);
+void nnBackprop(NN nn, NN g, Mat ti, Mat to);
 void nnLearn(NN nn, NN g, float rate);
 
 #endif // NN_H_
@@ -180,6 +182,15 @@ NN nnAlloc(size_t* arch, size_t arch_count) {
     return nn;
 }
 
+void nnFill(NN nn, size_t val) {
+    for (size_t i = 0; i < nn.count; ++i) {
+        matFill(nn.ws[i], val);
+        matFill(nn.bs[i], val);
+        matFill(nn.as[i], val);
+    }
+    matFill(nn.as[nn.count], 0);
+}
+
 void nnPrint(NN nn, const char* name) {
     char buf[256];
     printf("%s = [\n", name);
@@ -252,6 +263,64 @@ void nnFiniteDiff(NN nn, NN g, float eps, Mat ti, Mat to) {
                 MAT_AT(nn.bs[i], j, k) += eps;
                 MAT_AT(g.bs[i], j, k) = (nnCost(nn, ti, to) - c) / eps;
                 MAT_AT(nn.bs[i], j, k) = saved;
+            }
+        }
+    }
+}
+
+void nnBackprop(NN nn, NN g, Mat ti, Mat to) {
+    NN_ASSERT(ti.rows == to.rows);
+    NN_ASSERT(NN_OUTPUT(nn).cols == to.cols);
+
+    nnFill(g, 0);
+
+    // Current sample
+    for (size_t i = 0; i < ti.rows; ++i) {
+        // Put the training input into the nn
+        matCopy(NN_INPUT(nn), matRow(ti, i));
+        // Run the nn and get the 'answers'
+        nnForward(nn);
+
+        // Zero out the gradient activation matrix so garbage data won't mess
+        // with testing
+        for (size_t j = 0; j <= nn.count; ++j) {
+            matFill(g.as[j], 0);
+        }
+
+        // Put the (nn calculated value - desired value) difference into the
+        // gradient matrix
+        for (size_t j = 0; j < to.cols; ++j) {
+            MAT_AT(NN_OUTPUT(g), i, j) =
+                MAT_AT(NN_OUTPUT(nn), 0, j) - MAT_AT(to, i, j);
+        }
+        
+        // Reverse my way through the layers
+        for (size_t l = nn.count; l > 0; --l){
+            for (size_t col = 0; col < nn.as[l].cols; ++col){
+                float act = MAT_AT(nn.as[l], 0, col);
+                float ga = MAT_AT(g.as[l], 0, col);
+                float equation = 2*ga*act*(1-act);
+                MAT_AT(g.bs[l-1], 0, col) += equation;
+                // Prev activations
+                for (size_t row = 0; row < nn.as[l-1].cols; ++row){
+                    float prevAct = MAT_AT(nn.as[l-1], 0, row);
+                    float prevW = MAT_AT(nn.ws[l-1], row, col);
+                    MAT_AT(g.ws[l-1], row, col) += equation*prevAct;
+                    MAT_AT(g.as[l-1], 0, row) += equation*prevW;
+                }
+            }
+        }
+    }
+
+    for (size_t i = 0; i < g.count; ++i){
+        for (size_t row = 0; row < g.ws[i].rows; ++row){
+            for (size_t col = 0; col < g.ws[i].cols; ++col){
+                MAT_AT(g.ws[i], row, col) /= ti.rows;
+            }
+        }
+        for (size_t row = 0; row < g.bs[i].rows; ++row){
+            for (size_t col = 0; col < g.bs[i].cols; ++col){
+                MAT_AT(g.bs[i], row, col) /= ti.rows;
             }
         }
     }
