@@ -11,3 +11,4 @@ then
 fi;
 
 $prefix clang -Wall -Wextra -o xor xor.c -lm
+$prefix clang -Wall -Wextra -o add add.c -lm
