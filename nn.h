@@ -36,6 +36,8 @@ void matCopy(Mat dst, Mat src);
 void matSum(Mat dst, Mat a);
 void matSig(Mat m);
 void matPrint(Mat m, const char* name, size_t p);
+void matPrintRow(Mat m, size_t row);
+void matShuffleRows(Mat m);
 #define MAT_PRINT(m) matPrint(m, #m, 0);
 
 typedef struct {
@@ -157,6 +159,25 @@ void matPrint(Mat m, const char* name, size_t padding) {
         printf("\n");
     }
     printf("%*s]\n", (int)padding, "");
+}
+
+void matPrintRow(Mat m, size_t row) {
+    printf(" ");
+    for (size_t j = 0; j < m.cols; j++) {
+        printf("%f ", MAT_AT(m, row, j));
+    }
+    printf("\n");
+}
+
+void matShuffleRows(Mat m) {
+    for (size_t i = 0; i < m.rows; i++) {
+        size_t randRow = i + rand() % (m.rows - i);
+        for (size_t k = 0; k < m.cols; k++) {
+            float save = MAT_AT(m, i, k);
+            MAT_AT(m, i, k) = MAT_AT(m, randRow, k);
+            MAT_AT(m, randRow, k) = save;
+        }
+    }
 }
 
 NN nnAlloc(size_t* arch, size_t arch_count) {
@@ -293,33 +314,33 @@ void nnBackprop(NN nn, NN g, Mat ti, Mat to) {
             MAT_AT(NN_OUTPUT(g), 0, j) =
                 MAT_AT(NN_OUTPUT(nn), 0, j) - MAT_AT(to, i, j);
         }
-        
+
         // Reverse my way through the layers
-        for (size_t l = nn.count; l > 0; --l){
-            for (size_t col = 0; col < nn.as[l].cols; ++col){
+        for (size_t l = nn.count; l > 0; --l) {
+            for (size_t col = 0; col < nn.as[l].cols; ++col) {
                 float act = MAT_AT(nn.as[l], 0, col);
                 float ga = MAT_AT(g.as[l], 0, col);
-                float equation = 2*ga*act*(1-act);
-                MAT_AT(g.bs[l-1], 0, col) += equation;
+                float equation = 2 * ga * act * (1 - act);
+                MAT_AT(g.bs[l - 1], 0, col) += equation;
                 // Prev activations
-                for (size_t row = 0; row < nn.as[l-1].cols; ++row){
-                    float prevAct = MAT_AT(nn.as[l-1], 0, row);
-                    float prevW = MAT_AT(nn.ws[l-1], row, col);
-                    MAT_AT(g.ws[l-1], row, col) += equation*prevAct;
-                    MAT_AT(g.as[l-1], 0, row) += equation*prevW;
+                for (size_t row = 0; row < nn.as[l - 1].cols; ++row) {
+                    float prevAct = MAT_AT(nn.as[l - 1], 0, row);
+                    float prevW = MAT_AT(nn.ws[l - 1], row, col);
+                    MAT_AT(g.ws[l - 1], row, col) += equation * prevAct;
+                    MAT_AT(g.as[l - 1], 0, row) += equation * prevW;
                 }
             }
         }
     }
 
-    for (size_t i = 0; i < g.count; ++i){
-        for (size_t row = 0; row < g.ws[i].rows; ++row){
-            for (size_t col = 0; col < g.ws[i].cols; ++col){
+    for (size_t i = 0; i < g.count; ++i) {
+        for (size_t row = 0; row < g.ws[i].rows; ++row) {
+            for (size_t col = 0; col < g.ws[i].cols; ++col) {
                 MAT_AT(g.ws[i], row, col) /= ti.rows;
             }
         }
-        for (size_t row = 0; row < g.bs[i].rows; ++row){
-            for (size_t col = 0; col < g.bs[i].cols; ++col){
+        for (size_t row = 0; row < g.bs[i].rows; ++row) {
+            for (size_t col = 0; col < g.bs[i].cols; ++col) {
                 MAT_AT(g.bs[i], row, col) /= ti.rows;
             }
         }
