@@ -1,5 +1,5 @@
 #define NN_IMPLEMENTATION
-#include "nn.h"
+#include "include/nn.h"
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>

@@ -1,6 +1,6 @@
-#include "plot.h"
+#include "include/plot.h"
 #define NN_IMPLEMENTATION
-#include "nn.h"
+#include "include/nn.h"
 #include <SDL2/SDL_rect.h>
 #include <SDL2/SDL_timer.h>
 #include <SDL2/SDL_video.h>

@@ -1,6 +1,6 @@
 #include <time.h>
 #define NN_IMPLEMENTATION
-#include "nn.h"
+#include "include/nn.h"
 
 // clang-format off
 // syntax: value1, value2, answer

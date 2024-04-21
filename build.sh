@@ -10,5 +10,6 @@ then
     prefix="bear --";
 fi;
 
-$prefix clang -g -Wall -Wextra -o xor xor.c -lm
-$prefix clang -g -Wall -Wextra -o add add.c plot.c trainer.c -lm -I./include/SDL2 -L./lib -lSDL2main -lSDL2
+$prefix clang -g -Wall -Wextra -o bin/xor xor.c -lm
+$prefix clang -g -Wall -Wextra -o bin/add add.c plot.c trainer.c -lm -I./include/SDL2 -L./lib -lSDL2main -lSDL2
+$prefix clang -g -Wall -Wextra -o bin/convertPngMat convertPngMat.c -lm

@@ -1,6 +1,6 @@
-#include "trainer.h"
+#include "include/trainer.h"
 #define NN_IMPLEMENTATION
-#include "nn.h"
+#include "include/nn.h"
 #include <stdio.h>
 #include <strings.h>
 

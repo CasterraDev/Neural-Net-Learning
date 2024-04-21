@@ -5,9 +5,9 @@
 #include <stdlib.h>
 #include <time.h>
 #define NN_IMPLEMENTATION
-#include "nn.h"
-#include "plot.h"
-#include "trainer.h"
+#include "include/nn.h"
+#include "include/plot.h"
+#include "include/trainer.h"
 
 #define BITS 4
 

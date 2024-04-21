@@ -41,6 +41,8 @@ float randFloat(void);
 float sigmoidf(float x);
 
 Mat matAlloc(size_t rows, size_t cols);
+void matSave(FILE* out, Mat m);
+Mat matLoad(FILE* in);
 void matRand(Mat m, float low, float high);
 void matFill(Mat m, float n);
 void matDot(Mat dst, Mat a, Mat b);
@@ -93,6 +95,31 @@ Mat matAlloc(size_t rows, size_t cols) {
     m.stride = cols;
     m.es = NN_MALLOC(sizeof(*m.es) * rows * cols);
     NN_ASSERT(m.es != NULL);
+    return m;
+}
+
+void matSave(FILE* out, Mat m) {
+    fwrite(&m.rows, sizeof(m.rows), 1, out);
+    fwrite(&m.cols, sizeof(m.cols), 1, out);
+    for (size_t i = 0; i < m.rows; i++) {
+        size_t n = fwrite(&MAT_AT(m, i, 0), sizeof(*m.es), m.cols, out);
+        while (n < m.cols && !ferror(out)) {
+            size_t x = fwrite(m.es + n, sizeof(*m.es), m.cols - n, out);
+            n += x;
+        }
+    }
+}
+
+Mat matLoad(FILE* in) {
+    size_t rows, cols;
+    fread(&rows, sizeof(size_t), 1, in);
+    fread(&cols, sizeof(size_t), 1, in);
+    Mat m = matAlloc(rows, cols);
+    size_t n = fread(m.es, sizeof(*m.es), rows * cols, in);
+    while (n < rows*cols && !ferror(in)) {
+        size_t x = fread(m.es, sizeof(*m.es) + n, rows*cols - n, in);
+        n += x;
+    }
     return m;
 }
 
