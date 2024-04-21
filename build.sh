@@ -11,4 +11,4 @@ then
 fi;
 
 $prefix clang -Wall -Wextra -o xor xor.c -lm
-$prefix clang -Wall -Wextra -o add add.c -lm
+$prefix clang -Wall -Wextra -o add add.c -lm -I./include/SDL2 -L./lib -lSDL2main -lSDL2
