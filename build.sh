@@ -10,6 +10,5 @@ then
     prefix="bear --";
 fi;
 
-#$prefix clang -g -Wall -Wextra -o xor xor.c -lm
-#$prefix clang -g -Wall -Wextra -o add add.c -lm -I./include/SDL2 -L./lib -lSDL2main -lSDL2
-$prefix clang -g -Wall -Wextra -o loader loader.c -lm
+$prefix clang -g -Wall -Wextra -o xor xor.c -lm
+$prefix clang -g -Wall -Wextra -o add add.c plot.c trainer.c -lm -I./include/SDL2 -L./lib -lSDL2main -lSDL2

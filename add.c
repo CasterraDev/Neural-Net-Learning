@@ -7,6 +7,7 @@
 #define NN_IMPLEMENTATION
 #include "nn.h"
 #include "plot.h"
+#include "trainer.h"
 
 #define BITS 4
 
@@ -17,9 +18,8 @@
 #include <SDL2/SDL.h>
 
 #define WINDOW_FACTOR 80
-#define WINDOW_HEIGHT 9*WINDOW_FACTOR
-#define WINDOW_WIDTH 16*WINDOW_FACTOR
-
+#define WINDOW_HEIGHT 9 * WINDOW_FACTOR
+#define WINDOW_WIDTH 16 * WINDOW_FACTOR
 
 int main(void) {
     srand(time(0));
@@ -57,8 +57,6 @@ int main(void) {
     // trainingData.sampleSize / batchSize equals a whole number and make sure
     // it's not too big.
     size_t batchSize = 30;
-    // Round up the count of batches
-    size_t batchCnt = (td.rows + batchSize - 1) / batchSize;
 
     // REMEMBER: The nn architecture is a tweaky variable. The most important
     // one.
@@ -73,8 +71,6 @@ int main(void) {
     float rate = 1;
     // REMEMBER: runsAmt is a thing to tweak if nn isn't working completely
     size_t runsAmt = 2000;
-    size_t runs = 0;
-    float cost = 0;
     Plot plot = {0};
 
     while (running) {
@@ -87,7 +83,7 @@ int main(void) {
         int rw, rh, rx, ry;
         int padding = 25;
         rw = (WINDOW_WIDTH / 2) - padding;
-        rh = WINDOW_HEIGHT*2 / 3;
+        rh = WINDOW_HEIGHT * 2 / 3;
         rx = padding;
         ry = (WINDOW_HEIGHT / 2 - rh / 2);
 
@@ -95,37 +91,9 @@ int main(void) {
         SDL_RenderClear(renderer);
 
         SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
-        for (size_t i = 0; i < batchCnt && runs < runsAmt; ++i) {
-            size_t size = batchSize;
-            size_t batchStart = i * batchSize;
-            // If on the last batch. The size most likely won't be a full
-            // batch, so we fix the size and say it's the last batch of the
-            // trainingData so we can calculate the avg cost.
-            if (td.rows - batchStart < batchSize) {
-                size = td.rows - batchStart;
-            }
 
-            // Split the training input/output
-            Mat ti = {.rows = size,
-                      .cols = BITS * 2,
-                      .stride = td.stride,
-                      .es = &MAT_AT(td, batchStart, 0)};
-            Mat to = {.rows = size,
-                      .cols = 1 + BITS,
-                      .stride = td.stride,
-                      .es = &MAT_AT(td, batchStart, ti.cols)};
+        tnrBatchTrain(&nn, &g, &td, &plot, runsAmt, batchSize, BITS * 2, BITS + 1, rate);
 
-            // Train this batch
-            nnBackprop(nn, g, ti, to);
-            nnLearn(nn, g, rate);
-            cost += nnCost(nn, ti, to);
-
-            if (i == batchCnt - 1) {
-                printf("%zu: Average Cost = %f\n", i, cost / batchSize);
-                plotAppend(&plot, cost / batchSize);
-                cost = 0;
-            }
-        }
         plotCost(renderer, plot, rx, ry, rw, rh);
         SDL_RenderPresent(renderer);
     }
