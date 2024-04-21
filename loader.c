@@ -70,27 +70,19 @@ float readFirstNumber(char* str) {
     return 0;
 }
 
-int main(int argc, char* argv[]) {
-    if (argc < 1) {
-        printf("Need to provide file to open.");
-        return 1;
-    }
-    char* fileName = argv[1];
+void loadNNFromFile(char* fileName, ArchDA* arch, size_t* batchSize,
+                    size_t* tiColSize, size_t* toColSize, size_t* tRowSize,
+                    Mat* data) {
     FILE* file;
+    printf("%s", fileName);
     file = fopen(fileName, "r");
     if (file == NULL) {
         printf("ERROR: Couldn't open file\n");
-        return 1;
+        return;
     }
 
     printf("Contents of %s are:\n", fileName);
     NN_FILE_SECTION section;
-    ArchDA arch = {0};
-    size_t batchSize = 0;
-    size_t tiColSize = 0;
-    size_t toColSize = 0;
-    size_t tRowSize = 0;
-    Mat data = {};
     int startOfData = -1;
 
     char buff[255];
@@ -112,20 +104,19 @@ int main(int argc, char* argv[]) {
         } else if (strEqualIArr(buff, "--TrainingOutputColSize--")) {
             section = TRAINING_OUTPUT_COLSIZE;
             continue;
-        } else if (strEqualIArr(buff, "--TrainingRowSize")) {
-            section = TRAINING_ROW_SIZE;
+        } else if (strEqualIArr(buff, "--TrainingRowSize")) { section = TRAINING_ROW_SIZE;
             continue;
         }
 
         char* str = buff;
         switch (section) {
             case (ARCH): {
-                readNumbers(&arch, str);
+                readNumbers(arch, str);
                 break;
             }
             case (BATCH_SIZE): {
                 char* str = buff;
-                batchSize = readFirstNumber(str);
+                *batchSize = readFirstNumber(str);
                 break;
             }
             case (DATA): {
@@ -133,36 +124,55 @@ int main(int argc, char* argv[]) {
                     printf("TrainingInputColSize, TrainingOutputColSize, and "
                            "TrainingRowSize must be before Data in the config "
                            "file.");
-                    return 0;
+                    return;
                 }
                 if (startOfData == -1) {
                     startOfData = lineNum;
-                    data = matAlloc(tRowSize, tiColSize + toColSize);
+                    *data = matAlloc(*tRowSize, *tiColSize + *toColSize);
                 }
                 MatDA row = {0};
                 readNumbers(&row, buff);
                 for (size_t i = 0; i < row.count; i++) {
-                    MAT_AT(data, lineNum - startOfData, i) = row.items[i];
+                    MAT_AT(*data, lineNum - startOfData, i) = row.items[i];
                 }
                 break;
             }
             case (TRAINING_INPUT_COLSIZE): {
                 char* str = buff;
-                tiColSize = readFirstNumber(str);
+                *tiColSize = readFirstNumber(str);
                 break;
             }
             case (TRAINING_OUTPUT_COLSIZE): {
                 char* str = buff;
-                toColSize = readFirstNumber(str);
+                *toColSize = readFirstNumber(str);
                 break;
             }
             case (TRAINING_ROW_SIZE): {
                 char* str = buff;
-                tRowSize = readFirstNumber(str);
+                *tRowSize = readFirstNumber(str);
                 break;
             }
         }
     }
+    fclose(file);
+}
+
+int main(int argc, char* argv[]) {
+    if (argc < 1) {
+        printf("Need to provide file to open.");
+        return 1;
+    }
+
+    ArchDA arch = {0};
+
+    size_t batchSize = 0;
+    size_t tiColSize = 0;
+    size_t toColSize = 0;
+    size_t tRowSize = 0;
+
+    Mat data;
+
+    loadNNFromFile(argv[1], &arch, &batchSize, &tiColSize, &toColSize, &tRowSize, &data);
 
     printf("Arch:\n");
     for (size_t i = 0; i < arch.count; i++) {
@@ -176,7 +186,7 @@ int main(int argc, char* argv[]) {
     MAT_PRINT(data);
 
     NN nn = nnAlloc(arch.items, arch.count);
+    nnRand(nn, 0, 1);
     NN_PRINT(nn);
-    fclose(file);
     return 0;
 }
