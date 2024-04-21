@@ -1,3 +1,4 @@
+#pragma once
 #ifndef NN_H_
 #define NN_H_
 
@@ -21,6 +22,18 @@ typedef struct {
     size_t stride;
     float* es;
 } Mat;
+
+typedef struct {
+    float* items;
+    size_t count;
+    size_t capacity;
+} MatDA;
+
+typedef struct {
+    size_t* items;
+    size_t count;
+    size_t capacity;
+} ArchDA;
 
 #define MAT_AT(m, i, j) (m).es[(i) * (m).stride + j]
 #define ARRAY_LEN(xs) sizeof((xs)) / sizeof((xs)[0])

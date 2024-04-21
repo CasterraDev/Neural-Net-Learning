@@ -23,18 +23,6 @@ typedef enum NN_FILE_SECTION {
     TRAINING_ROW_SIZE
 } NN_FILE_SECTION;
 
-typedef struct {
-    float* items;
-    size_t count;
-    size_t capacity;
-} MatDA;
-
-typedef struct {
-    size_t* items;
-    size_t count;
-    size_t capacity;
-} ArchDA;
-
 #define DynoAppend(p, item)                                                    \
     do {                                                                       \
         if ((p)->count >= (p)->capacity) {                                     \
