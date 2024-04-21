@@ -19,14 +19,21 @@ typedef enum NN_FILE_SECTION {
     BATCH_SIZE,
     DATA,
     TRAINING_INPUT_COLSIZE,
-    TRAINING_OUTPUT_COLSIZE
+    TRAINING_OUTPUT_COLSIZE,
+    TRAINING_ROW_SIZE
 } NN_FILE_SECTION;
 
 typedef struct {
     float* items;
     size_t count;
     size_t capacity;
-} DA;
+} MatDA;
+
+typedef struct {
+    size_t* items;
+    size_t count;
+    size_t capacity;
+} ArchDA;
 
 #define DynoAppend(p, item)                                                    \
     do {                                                                       \
@@ -38,17 +45,16 @@ typedef struct {
         (p)->items[(p)->count++] = (item);                                     \
     } while (0)
 
-void readNumbers(DA* da, char* str) {
-    char* p = str;
-    while (*p) {
-        if (isdigit(*p) || ((*p == '-' || *p == '+') && isdigit(*(p + 1)))) {
-            long val = strtol(p, &p, 10);
-            DynoAppend(da, val);
-        } else {
-            p++;
-        }
+#define readNumbers(da, str)                                                   \
+    char* p = (str);                                                           \
+    while (*p) {                                                               \
+        if (isdigit(*p) || ((*p == '-' || *p == '+') && isdigit(*(p + 1)))) {  \
+            long val = strtol(p, &p, 10);                                      \
+            DynoAppend((da), val);                                             \
+        } else {                                                               \
+            p++;                                                               \
+        }                                                                      \
     }
-}
 
 float readFirstNumber(char* str) {
     char* p = str;
@@ -65,6 +71,10 @@ float readFirstNumber(char* str) {
 }
 
 int main(int argc, char* argv[]) {
+    if (argc < 1) {
+        printf("Need to provide file to open.");
+        return 1;
+    }
     char* fileName = argv[1];
     FILE* file;
     file = fopen(fileName, "r");
@@ -75,12 +85,12 @@ int main(int argc, char* argv[]) {
 
     printf("Contents of %s are:\n", fileName);
     NN_FILE_SECTION section;
-    DA arch = {0};
+    ArchDA arch = {0};
     size_t batchSize = 0;
     size_t tiColSize = 0;
     size_t toColSize = 0;
-    //TODO: Don't hard code this
-    Mat data = matAlloc(3, 4);
+    size_t tRowSize = 0;
+    Mat data = {};
     int startOfData = -1;
 
     char buff[255];
@@ -102,6 +112,9 @@ int main(int argc, char* argv[]) {
         } else if (strEqualIArr(buff, "--TrainingOutputColSize--")) {
             section = TRAINING_OUTPUT_COLSIZE;
             continue;
+        } else if (strEqualIArr(buff, "--TrainingRowSize")) {
+            section = TRAINING_ROW_SIZE;
+            continue;
         }
 
         char* str = buff;
@@ -116,10 +129,17 @@ int main(int argc, char* argv[]) {
                 break;
             }
             case (DATA): {
+                if (tiColSize == 0 || toColSize == 0 || tRowSize == 0) {
+                    printf("TrainingInputColSize, TrainingOutputColSize, and "
+                           "TrainingRowSize must be before Data in the config "
+                           "file.");
+                    return 0;
+                }
                 if (startOfData == -1) {
                     startOfData = lineNum;
+                    data = matAlloc(tRowSize, tiColSize + toColSize);
                 }
-                DA row = {0};
+                MatDA row = {0};
                 readNumbers(&row, buff);
                 for (size_t i = 0; i < row.count; i++) {
                     MAT_AT(data, lineNum - startOfData, i) = row.items[i];
@@ -136,18 +156,27 @@ int main(int argc, char* argv[]) {
                 toColSize = readFirstNumber(str);
                 break;
             }
+            case (TRAINING_ROW_SIZE): {
+                char* str = buff;
+                tRowSize = readFirstNumber(str);
+                break;
+            }
         }
     }
 
     printf("Arch:\n");
     for (size_t i = 0; i < arch.count; i++) {
-        printf("%f ", arch.items[i]);
+        printf("%zu ", arch.items[i]);
     }
+    printf("\n");
     printf("Batchsize: %zu\n", batchSize);
     printf("TIColSize: %zu\n", tiColSize);
     printf("TOColSize: %zu\n", toColSize);
+    printf("TRowSize: %zu\n", tRowSize);
     MAT_PRINT(data);
 
+    NN nn = nnAlloc(arch.items, arch.count);
+    NN_PRINT(nn);
     fclose(file);
     return 0;
 }
