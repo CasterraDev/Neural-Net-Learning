@@ -1,0 +1,14 @@
+--Arch--
+238
+82
+9 2
+--BatchSize--
+32
+--TrainingInputColSize--
+3
+--TrainingOutputColSize--
+1
+--Data--
+8 2 3 9
+28 9 1 9
+3 8 4 2
