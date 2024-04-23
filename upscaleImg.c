@@ -50,8 +50,11 @@ int main(int argc, char* argv[]) {
     if (SDL_Init(SDL_INIT_VIDEO) != 0) {
         fprintf(stderr, "Error: %s", SDL_GetError());
     }
-    TTF_Init();
-    SDL_Window* window = SDL_CreateWindow("Test Window", 0, 0, 16 * 80, 9 * 80,
+    if (TTF_Init()) {
+        fprintf(stderr, "Error: %s", TTF_GetError());
+    }
+
+    SDL_Window* window = SDL_CreateWindow("Image Trainer", 0, 0, 16 * 80, 9 * 80,
                                           SDL_WINDOW_SHOWN);
     SDL_Renderer* renderer = SDL_CreateRenderer(
         window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
@@ -71,39 +74,6 @@ int main(int argc, char* argv[]) {
     // REMEMBER: runsAmt is a thing to tweak if nn isn't working completely
     size_t runsAmt = 2000;
     Plot plot = {0};
-
-
-    SDL_Texture* texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, w, h);
-    uint8_t* pixels;
-    int pitch;
-
-    SDL_LockTexture(texture, NULL, (void**)&pixels, &pitch);
-
-    printf("rows: %zu pitch: %d\n", imgMat.rows, pitch);
-    for (size_t c = 0; c < imgMat.rows; c++){
-        int pixelColor = MAT_AT(imgMat, c, 2) * 255;
-        int x = MAT_AT(imgMat, c, 0) * (w-1);
-        int y = MAT_AT(imgMat, c, 1) * (h-1);
-        //printf("%d , %d = %d\n", x, y, pixelColor);
-        pixels[(x*4)+(y*pitch)] = pixelColor;
-        pixels[(x*4)+(y*pitch) + 1] = pixelColor;
-        pixels[(x*4)+(y*pitch) + 2] = pixelColor;
-        pixels[(x*4)+(y*pitch) + 3] = pixelColor;
-    }
-    SDL_Rect rect2;
-    rect2.x = 100;
-    rect2.y = 100;
-    rect2.w = w;
-    rect2.h = h;
-    SDL_RenderClear(renderer);
-    SDL_RenderCopyEx(renderer, texture, NULL, &rect2, 0, NULL, SDL_FLIP_NONE);
-    SDL_UnlockTexture(texture);
-
-    Mat aiImg = matAlloc(w*h, 3);
-    matFill(aiImg, 0);
-
-    matShuffleRows(imgMat);
-
     size_t scale = 200;
 
     SDL_Rect imgExampleRect;
@@ -111,6 +81,33 @@ int main(int argc, char* argv[]) {
     imgExampleRect.y = WINDOW_HEIGHT - (h+scale) - 50;
     imgExampleRect.w = w + scale;
     imgExampleRect.h = h + scale;
+
+    // Create example image
+    SDL_Texture* texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, w, h);
+    uint8_t* pixels;
+    int pitch;
+
+    SDL_LockTexture(texture, NULL, (void**)&pixels, &pitch);
+
+    for (size_t c = 0; c < imgMat.rows; c++){
+        int pixelColor = MAT_AT(imgMat, c, 2) * 255;
+        int x = MAT_AT(imgMat, c, 0) * (w-1);
+        int y = MAT_AT(imgMat, c, 1) * (h-1);
+        pixels[(x*4)+(y*pitch)] = pixelColor;
+        pixels[(x*4)+(y*pitch) + 1] = pixelColor;
+        pixels[(x*4)+(y*pitch) + 2] = pixelColor;
+        pixels[(x*4)+(y*pitch) + 3] = pixelColor;
+    }
+    
+    SDL_RenderClear(renderer);
+    SDL_RenderCopy(renderer, texture, NULL, &imgExampleRect);
+    SDL_UnlockTexture(texture);
+
+    Mat aiImg = matAlloc(w*h, 3);
+    matFill(aiImg, 0);
+
+    // Shuffle the training data now. For batch training
+    matShuffleRows(imgMat);
 
     int plotRw, plotRh, plotRx, plotRy;
     int padding = 25;
@@ -166,6 +163,7 @@ int main(int argc, char* argv[]) {
 
     NN_PRINT(nn);
 
+    // Destroy EVERYTHING
     TTF_CloseFont(font);
     SDL_DestroyTexture(texture);
     SDL_DestroyRenderer(renderer);
