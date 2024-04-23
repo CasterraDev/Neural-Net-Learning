@@ -1,8 +1,10 @@
+#include "include/trainer.h"
 #include <SDL2/SDL_blendmode.h>
 #include <SDL2/SDL_pixels.h>
 #include <SDL2/SDL_rect.h>
 #include <SDL2/SDL_timer.h>
 #include <SDL2/SDL_video.h>
+#include <SDL2/SDL_ttf.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -29,18 +31,26 @@ char *argsShift(int *argc, char*** argv){
     return res;
 }
 
-int main(int argc, char** argv) {
+int main(int argc, char* argv[]) {
+    const char *programName = argsShift(&argc, &argv);
+
+    if (argc <= 0){
+        printf("USAGE: ./%s [pathToImage]", programName);
+        printf("ERROR: No image given\n");
+    }
+
     //srand(time(0));
     srand(40);
 
-    char* imgPath = argv[1];
+    char* imgPath = argsShift(&argc, &argv);
     int w,h,c;
     Mat imgMat = imgToMat(imgPath, &w, &h, &c);
 
     char running = 1;
     if (SDL_Init(SDL_INIT_VIDEO) != 0) {
-        printf("Error: %s", SDL_GetError());
+        fprintf(stderr, "Error: %s", SDL_GetError());
     }
+    TTF_Init();
     SDL_Window* window = SDL_CreateWindow("Test Window", 0, 0, 16 * 80, 9 * 80,
                                           SDL_WINDOW_SHOWN);
     SDL_Renderer* renderer = SDL_CreateRenderer(
@@ -48,14 +58,9 @@ int main(int argc, char** argv) {
     SDL_Event event;
     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
 
-    // REMEMBER: Batchsize is a tweaky variable. Should try to make it so
-    // trainingData.sampleSize / batchSize equals a whole number and make sure
-    // it's not too big.
-    size_t batchSize = 30;
-
     // REMEMBER: The nn architecture is a tweaky variable. The most important
     // one.
-    size_t arch[] = {2, 4, 1};
+    size_t arch[] = {2, 28, 1};
 
     // Allocate the neural net and the gradient net.
     NN nn = nnAlloc(arch, ARRAY_LEN(arch));
@@ -63,7 +68,6 @@ int main(int argc, char** argv) {
     // Randomize the weights/bias of the neural net.
     nnRand(nn, 0, 1);
 
-    float rate = 1;
     // REMEMBER: runsAmt is a thing to tweak if nn isn't working completely
     size_t runsAmt = 2000;
     Plot plot = {0};
@@ -95,7 +99,32 @@ int main(int argc, char** argv) {
     SDL_RenderCopyEx(renderer, texture, NULL, &rect2, 0, NULL, SDL_FLIP_NONE);
     SDL_UnlockTexture(texture);
 
+    Mat aiImg = matAlloc(w*h, 3);
+    matFill(aiImg, 0);
+
+    matShuffleRows(imgMat);
+
     size_t scale = 200;
+
+    SDL_Rect imgExampleRect;
+    imgExampleRect.x = WINDOW_WIDTH - (w+scale) - 50;
+    imgExampleRect.y = WINDOW_HEIGHT - (h+scale) - 50;
+    imgExampleRect.w = w + scale;
+    imgExampleRect.h = h + scale;
+
+    int plotRw, plotRh, plotRx, plotRy;
+    int padding = 25;
+    plotRw = (WINDOW_WIDTH / 2) - padding;
+    plotRh = WINDOW_HEIGHT * 2 / 3;
+    plotRx = padding;
+    plotRy = (WINDOW_HEIGHT / 2 - plotRh / 2);
+
+    SDL_Texture* costTexture;
+    TTF_Font* font = TTF_OpenFont("fonts/HackNerdFont-Regular.ttf", 72);
+    const char* ttfError = TTF_GetError();
+    fprintf(stderr, "ERROR: %s\n", ttfError);
+    SDL_Rect costDestRect;
+
     while (running) {
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT) {
@@ -103,34 +132,45 @@ int main(int argc, char** argv) {
             }
         }
 
-        int rw, rh, rx, ry;
-        int padding = 25;
-        rw = (WINDOW_WIDTH / 2) - padding;
-        rh = WINDOW_HEIGHT * 2 / 3;
-        rx = padding;
-        ry = (WINDOW_HEIGHT / 2 - rh / 2);
-
-        SDL_SetRenderDrawColor(renderer, 18, 255, 18, 255);
+        SDL_SetRenderDrawColor(renderer, 18, 18, 18, 255);
         SDL_RenderClear(renderer);
 
-        SDL_Rect rect;
-        rect.x = WINDOW_WIDTH - (w+scale) - 50;
-        rect.y = WINDOW_HEIGHT - (h+scale) - 50;
-        rect.w = w + scale;
-        rect.h = h + scale;
+        SDL_RenderCopy(renderer, texture, NULL, &imgExampleRect);
 
-        SDL_RenderCopyEx(renderer, texture, NULL, &rect, 0, NULL, SDL_FLIP_NONE);
+        for (size_t i = 0; i < runsAmt; i++){
+            tnrBatchTrain(&nn, &g, &imgMat, &plot, 20, 2, 1, 1);
+        }
 
-        //plotCost(renderer, plot, rx, ry, rw, rh);
+        SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+
+        plotCost(renderer, plot, plotRx, plotRy, plotRw, plotRh);
+
+        // TODO: Look into TTF_Glyplhs and replace this with them
+        char costBuf[10];
+        if (!snprintf(costBuf, sizeof(costBuf), "%f", plot.items[plot.count-1])){
+            fprintf(stderr, "Error: Putting costBuf into string.");
+        }
+        SDL_Surface* costTextSurf = TTF_RenderText_Solid(font, costBuf, (SDL_Color){255,255,255,255});
+		costTexture = SDL_CreateTextureFromSurface(renderer, costTextSurf);
+
+		costDestRect.x = 320 - (costTextSurf->w / 2.0f);
+		costDestRect.y = 240;
+		costDestRect.w = costTextSurf->w/2;
+		costDestRect.h = costTextSurf->h/2;
+		SDL_RenderCopy(renderer, costTexture, NULL, &costDestRect);
+
         SDL_RenderPresent(renderer);
+        SDL_DestroyTexture(costTexture);
+        SDL_FreeSurface(costTextSurf);
     }
 
     NN_PRINT(nn);
 
-
+    TTF_CloseFont(font);
     SDL_DestroyTexture(texture);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
+    TTF_Quit();
     SDL_Quit();
 
     return 0;

@@ -10,7 +10,7 @@ then
     prefix="bear --";
 fi;
 
-$prefix clang -g -Wall -Wextra -o bin/xor xor.c nn.c -lm
-$prefix clang -g -Wall -Wextra -o bin/add add.c nn.c plot.c trainer.c -lm -I./include/SDL2 -L./lib -lSDL2main -lSDL2
-$prefix clang -g -Wall -Wextra -o bin/convertPngMat convertPngMat.c nn.c -lm
-$prefix clang -g -Wall -Wextra -o bin/upscaleImg upscaleImg.c plot.c trainer.c nnFile.c nn.c -lm -I./include/SDL2 -L./lib -lSDL2main -lSDL2
+#$prefix clang -g -Wall -Wextra -o bin/xor xor.c nn.c -lm
+#$prefix clang -g -Wall -Wextra -o bin/add add.c nn.c plot.c trainer.c -lm -I./include/SDL2 -L./lib -lSDL2main -lSDL2
+#$prefix clang -g -Wall -Wextra -o bin/convertPngMat convertPngMat.c nn.c -lm
+$prefix clang -O3 -g -Wall -Wextra -o bin/upscaleImg upscaleImg.c plot.c trainer.c nnFile.c nn.c -lm -I./include/SDL2 -L./lib -lSDL2main -lSDL2_ttf -lSDL2

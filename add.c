@@ -92,7 +92,9 @@ int main(void) {
 
         SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
 
-        tnrBatchTrain(&nn, &g, &td, &plot, runsAmt, batchSize, BITS * 2, BITS + 1, rate);
+        for (size_t i = 0; i < runsAmt; i++){
+            tnrBatchTrain(&nn, &g, &td, &plot, batchSize, BITS * 2, BITS + 1, rate);
+        }
 
         plotCost(renderer, plot, rx, ry, rw, rh);
         SDL_RenderPresent(renderer);

@@ -35,8 +35,8 @@ void plotCost(SDL_Renderer* renderer, Plot plot, int rx, int ry, int rw,
     }
     if (min > 0) min = 0;
     size_t n = plot.count;
-    if (n < 1000)
-        n = 1000;
+    if (n < 500)
+        n = 500;
     SDL_FPoint points[plot.count];
     for (size_t i = 0; i + 1 < plot.count; ++i) {
         float x1 = rx + (float)rw / n * i;
