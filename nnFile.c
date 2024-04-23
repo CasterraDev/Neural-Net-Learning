@@ -1,5 +1,8 @@
+#include <stdint.h>
 #define NN_IMPLEMENTATION
 #include "include/nn.h"
+#define STB_IMAGE_IMPLEMENTATION
+#include "include/stb_image.h"
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -145,36 +148,21 @@ void loadNNFromFile(char* fileName, ArchDA* arch, size_t* batchSize,
     fclose(file);
 }
 
-int main(int argc, char* argv[]) {
-    if (argc < 1) {
-        printf("Need to provide file to open.");
-        return 1;
+Mat imgToMat(char* imgPath, int* w, int* h, int* c){
+    uint8_t* data = (uint8_t*)stbi_load(imgPath, w, h, c, 0);
+    if (data == NULL){
+        printf("ERROR: Couldn't load image %s\n", imgPath);
     }
 
-    ArchDA arch = {0};
-
-    size_t batchSize = 0;
-    size_t tiColSize = 0;
-    size_t toColSize = 0;
-    size_t tRowSize = 0;
-
-    Mat data;
-
-    loadNNFromFile(argv[1], &arch, &batchSize, &tiColSize, &toColSize, &tRowSize, &data);
-
-    printf("Arch:\n");
-    for (size_t i = 0; i < arch.count; i++) {
-        printf("%zu ", arch.items[i]);
+    //Cols: x y grayVal(0-255)
+    Mat t = matAlloc(*w**h, 3);
+    for (int x = 0; x < *w; x++){
+        for (int y = 0; y < *h; y++){
+            size_t i = y**w + x;
+            MAT_AT(t, i, 0) = (float)x/(*w-1);
+            MAT_AT(t, i, 1) = (float)y/(*h-1);
+            MAT_AT(t, i, 2) = data[i]/255.f;
+        }
     }
-    printf("\n");
-    printf("Batchsize: %zu\n", batchSize);
-    printf("TIColSize: %zu\n", tiColSize);
-    printf("TOColSize: %zu\n", toColSize);
-    printf("TRowSize: %zu\n", tRowSize);
-    MAT_PRINT(data);
-
-    NN nn = nnAlloc(arch.items, arch.count);
-    nnRand(nn, 0, 1);
-    NN_PRINT(nn);
-    return 0;
+    return t;
 }

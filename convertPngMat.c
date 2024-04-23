@@ -1,4 +1,3 @@
-#define NN_IMPLEMENTATION
 #include "include/nn.h"
 #include <assert.h>
 #include <stdio.h>

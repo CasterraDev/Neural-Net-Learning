@@ -1,5 +1,4 @@
 #include "include/trainer.h"
-#define NN_IMPLEMENTATION
 #include "include/nn.h"
 #include <stdio.h>
 #include <strings.h>
