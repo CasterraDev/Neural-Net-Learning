@@ -60,16 +60,16 @@ int main(int argc, char* argv[]) {
 
     // REMEMBER: The nn architecture is a tweaky variable. The most important
     // one.
-    size_t arch[] = {2, 14, 14, 1};
+    size_t arch[] = {2, 28, 14, 1};
 
     // Allocate the neural net and the gradient net.
     NN nn = nnAlloc(arch, ARRAY_LEN(arch));
     NN g = nnAlloc(arch, ARRAY_LEN(arch));
     // Randomize the weights/bias of the neural net.
-    nnRand(nn, 0, 1);
+    nnRand(nn, -1, 1);
 
     // REMEMBER: runsAmt is a thing to tweak if nn isn't working completely
-    size_t runsAmt = 2000;
+    size_t runsAmt = 1000;
     size_t runs = 0;
     Plot plot = {0};
     size_t scale = 200;
@@ -79,6 +79,12 @@ int main(int argc, char* argv[]) {
     imgExampleRect.y = WINDOW_HEIGHT - (h + scale) - 50;
     imgExampleRect.w = w + scale;
     imgExampleRect.h = h + scale;
+
+    SDL_Rect liveImgRect;
+    liveImgRect.x = WINDOW_WIDTH - (w + scale) - 50;
+    liveImgRect.y = (h + scale) - 50;
+    liveImgRect.w = w + scale;
+    liveImgRect.h = h + scale;
 
     // Create example image
     SDL_Texture* texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888,
@@ -119,6 +125,12 @@ int main(int argc, char* argv[]) {
     TTF_Font* font = TTF_OpenFont("fonts/HackNerdFont-Regular.ttf", 72);
     SDL_Rect costDestRect;
 
+    SDL_Texture* liveTexture =
+        SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888,
+                SDL_TEXTUREACCESS_STREAMING, w, h);
+    uint8_t* livePixels;
+    int livePitch;
+
     while (running) {
         runs++;
         while (SDL_PollEvent(&event)) {
@@ -133,9 +145,10 @@ int main(int argc, char* argv[]) {
 
             SDL_RenderCopy(renderer, texture, NULL, &imgExampleRect);
 
-            for (size_t i = 0; i < 5; i++){
-                tnrBatchTrain(&nn, &g, &imgMat, &plot, 5, 2, 1, 1);
+            for (size_t i = 0; i < 100; i++) {
+                tnrBatchTrain(&nn, &g, &imgMat, &plot, 28, 2, 1, 1);
             }
+            matShuffleRows(imgMat);
 
             SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
 
@@ -159,6 +172,24 @@ int main(int argc, char* argv[]) {
 
             SDL_DestroyTexture(costTexture);
             SDL_FreeSurface(costTextSurf);
+            for (int x = 0; x < w; x++) {
+                for (int y = 0; y < h; y++) {
+                    MAT_AT(NN_INPUT(nn), 0, 0) = (float)x / (w - 1);
+                    MAT_AT(NN_INPUT(nn), 0, 1) = (float)y / (h - 1);
+                    nnForward(nn);
+                    uint8_t pixel = MAT_AT(NN_OUTPUT(nn), 0, 0) * 255.0f;
+
+                    SDL_LockTexture(liveTexture, NULL, (void**)&livePixels, &livePitch);
+
+                    livePixels[(x * 4) + (y * livePitch)] = pixel;
+                    livePixels[(x * 4) + (y * livePitch) + 1] = pixel;
+                    livePixels[(x * 4) + (y * livePitch) + 2] = pixel;
+                    livePixels[(x * 4) + (y * livePitch) + 3] = pixel;
+
+                    SDL_RenderCopy(renderer, liveTexture, NULL, &liveImgRect);
+                    SDL_UnlockTexture(liveTexture);
+                }
+            }
         }
 
         SDL_RenderPresent(renderer);
