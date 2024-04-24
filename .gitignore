@@ -1,5 +1,6 @@
 .git/
 .cache/
 compile_commands.json
+img.png
 # Executables
 bin/
