@@ -41,8 +41,8 @@ int main(int argc, char* argv[]) {
         printf("ERROR: No image given\n");
     }
 
-    // srand(time(0));
-    srand(40);
+    srand(time(0));
+    // srand(40);
 
     char* imgPath = argsShift(&argc, &argv);
     int w, h, c;
@@ -109,9 +109,6 @@ int main(int argc, char* argv[]) {
     SDL_RenderClear(renderer);
     SDL_RenderCopy(renderer, texture, NULL, &imgExampleRect);
     SDL_UnlockTexture(texture);
-
-    Mat aiImg = matAlloc(w * h, 3);
-    matFill(aiImg, 0);
 
     // Shuffle the training data now. For batch training
     matShuffleRows(imgMat);
