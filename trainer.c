@@ -2,7 +2,7 @@
 #include "include/nn.h"
 #include <strings.h>
 
-void tnrBatchTrain(NN* nn, NN* g, Mat* td, Plot* plot, size_t batchSize, size_t tiColSize, size_t toColSize, size_t rate){
+void tnrBatchTrain(NN* nn, NN* g, Mat* td, Plot* plot, size_t batchSize, size_t tiColSize, size_t toColSize, float rate){
     size_t batchCnt = (td->rows + batchSize - 1) / batchSize;
     float cost = 0;
     for (size_t i = 0; i < batchCnt; ++i) {
@@ -29,5 +29,6 @@ void tnrBatchTrain(NN* nn, NN* g, Mat* td, Plot* plot, size_t batchSize, size_t 
         nnLearn(*nn, *g, rate);
         cost += nnCost(*nn, ti, to);
     }
+
     plotAppend(plot, cost / batchSize);
 }

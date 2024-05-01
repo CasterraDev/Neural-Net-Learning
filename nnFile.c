@@ -61,7 +61,7 @@ float readFirstNumber(char* str) {
     return 0;
 }
 
-void loadNNFromFile(char* fileName, ArchDA* arch, size_t* batchSize,
+void loadNNFromFile(char* fileName, IntDA* arch, size_t* batchSize,
                     size_t* tiColSize, size_t* toColSize, size_t* tRowSize,
                     Mat* data) {
     FILE* file;
@@ -121,7 +121,7 @@ void loadNNFromFile(char* fileName, ArchDA* arch, size_t* batchSize,
                     startOfData = lineNum;
                     *data = matAlloc(*tRowSize, *tiColSize + *toColSize);
                 }
-                MatDA row = {0};
+                FloatDA row = {0};
                 readNumbers(&row, buff);
                 for (size_t i = 0; i < row.count; i++) {
                     MAT_AT(*data, lineNum - startOfData, i) = row.items[i];

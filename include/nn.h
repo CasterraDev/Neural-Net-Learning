@@ -26,13 +26,13 @@ typedef struct {
     float* items;
     size_t count;
     size_t capacity;
-} MatDA;
+} FloatDA;
 
 typedef struct {
     size_t* items;
     size_t count;
     size_t capacity;
-} ArchDA;
+} IntDA;
 
 #define MAT_AT(m, r, c) (m).es[(r) * (m).stride + c]
 #define ARRAY_LEN(xs) sizeof((xs)) / sizeof((xs)[0])

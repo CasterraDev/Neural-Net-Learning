@@ -9,7 +9,7 @@
 #include "include/plot.h"
 #include "include/trainer.h"
 
-#define BITS 4
+#define BITS 2
 
 #include <SDL2/SDL_events.h>
 #include <SDL2/SDL_render.h>

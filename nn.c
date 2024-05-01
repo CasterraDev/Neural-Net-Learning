@@ -1,4 +1,5 @@
 #include "include/nn.h"
+#include <math.h>
 
 float randFloat(void) {
     return (float)rand() / (float)RAND_MAX;
@@ -36,8 +37,8 @@ Mat matLoad(FILE* in) {
     fread(&cols, sizeof(size_t), 1, in);
     Mat m = matAlloc(rows, cols);
     size_t n = fread(m.es, sizeof(*m.es), rows * cols, in);
-    while (n < rows*cols && !ferror(in)) {
-        size_t x = fread(m.es, sizeof(*m.es) + n, rows*cols - n, in);
+    while (n < rows * cols && !ferror(in)) {
+        size_t x = fread(m.es, sizeof(*m.es) + n, rows * cols - n, in);
         n += x;
     }
     return m;
@@ -222,31 +223,6 @@ float nnCost(NN nn, Mat ti, Mat to) {
     }
 
     return c / n;
-}
-
-void nnFiniteDiff(NN nn, NN g, float eps, Mat ti, Mat to) {
-    float saved;
-    float c = nnCost(nn, ti, to);
-
-    for (size_t i = 0; i < nn.count; ++i) {
-        for (size_t j = 0; j < nn.ws[i].rows; ++j) {
-            for (size_t k = 0; k < nn.ws[i].cols; ++k) {
-                saved = MAT_AT(nn.ws[i], j, k);
-                MAT_AT(nn.ws[i], j, k) += eps;
-                MAT_AT(g.ws[i], j, k) = (nnCost(nn, ti, to) - c) / eps;
-                MAT_AT(nn.ws[i], j, k) = saved;
-            }
-        }
-
-        for (size_t j = 0; j < nn.bs[i].rows; ++j) {
-            for (size_t k = 0; k < nn.bs[i].cols; ++k) {
-                saved = MAT_AT(nn.bs[i], j, k);
-                MAT_AT(nn.bs[i], j, k) += eps;
-                MAT_AT(g.bs[i], j, k) = (nnCost(nn, ti, to) - c) / eps;
-                MAT_AT(nn.bs[i], j, k) = saved;
-            }
-        }
-    }
 }
 
 void nnBackprop(NN nn, NN g, Mat ti, Mat to) {
